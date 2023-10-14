@@ -1,0 +1,32 @@
+FROM ubuntu:latest
+
+# Set the non-interactive environment variable to prevent prompts during package installations
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install required packages and tools
+RUN apt-get update && apt-get install -y \
+    sudo \
+    curl \
+    unzip
+
+RUN curl -fsSL https://raw.githubusercontent.com/turbot/steampipe/main/install.sh | sudo sh
+
+# Install the Azure CLI
+RUN curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+
+# Download and install AWS CLI for the new user
+RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
+    unzip awscliv2.zip && \
+    sudo ./aws/install
+
+# Clean up downloaded files and AWS CLI installation
+RUN rm -f awscliv2.zip && \
+    rm -rf aws
+
+# Switch to steampipe user
+RUN useradd -m steampipe
+USER steampipe
+
+# Install Steampipe plugins
+RUN steampipe plugin install azure azuread aws
+RUN steampipe service start
